@@ -92,18 +92,27 @@ function fitLabel(score: number): FitLabel {
 function profileBlock(profile: Profile): string {
   const lines: string[] = [];
   if (profile.name) lines.push(`Name: ${profile.name}`);
+  if (profile.targetRole) lines.push(`Target role: ${profile.targetRole}`);
   if (profile.positioning) lines.push(`Positioning: ${profile.positioning}`);
+  if (profile.proudestOf) lines.push(`Proudest of: ${profile.proudestOf}`);
   if (profile.headline) lines.push(`Headline: ${profile.headline}`);
   if (profile.location) lines.push(`Location: ${profile.location}`);
+  if (profile.remoteOnly) lines.push(`Remote only: yes`);
   if (profile.availability) lines.push(`Availability: ${profile.availability}`);
   if (profile.links?.length) lines.push(`Links: ${profile.links.join(", ")}`);
   if (profile.priorities?.length)
     lines.push(`Priorities (ranked): ${profile.priorities.join(" | ")}`);
   if (profile.dealbreakers?.length)
     lines.push(`Dealbreakers: ${profile.dealbreakers.join(" | ")}`);
+  if (profile.offLimits?.length)
+    lines.push(`Off-limits (never contact): ${profile.offLimits.join(", ")}`);
   if (profile.targetCriteria) lines.push(`Target criteria: ${profile.targetCriteria}`);
+  if (profile.emailStyle) lines.push(`Email style: ${profile.emailStyle}`);
+  if (profile.strongestSignals?.length)
+    lines.push(`Strongest signals:\n- ${profile.strongestSignals.join("\n- ")}`);
   if (profile.notes?.length) lines.push(`Notes: ${profile.notes.join(" | ")}`);
-  if (profile.research) lines.push(`Research findings:\n${profile.research}`);
+  if (profile.dossier) lines.push(`Dossier:\n${profile.dossier}`);
+  else if (profile.research) lines.push(`Research findings:\n${profile.research}`);
   return lines.join("\n");
 }
 

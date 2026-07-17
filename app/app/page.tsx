@@ -113,12 +113,18 @@ export default function ChatApp() {
             >
               <Mark size={18} />
             </Link>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="font-semibold leading-tight">foothold</div>
               <div className="text-xs text-gray-500">
                 sources roles · drafts outreach · you approve everything
               </div>
             </div>
+            <Link
+              href="/app/profile"
+              className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-gray-400"
+            >
+              profile
+            </Link>
           </div>
 
           {/* Messages */}

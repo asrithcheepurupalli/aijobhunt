@@ -106,6 +106,24 @@ export async function mergeProfile(patch: Partial<Profile>): Promise<Profile> {
   });
 }
 
+// Overwrite the given profile fields exactly (arrays replaced, not appended;
+// empty strings/arrays clear the field). Used by the Profile page's explicit
+// edits, where merge/append semantics would make deletions impossible.
+export async function setProfileFields(
+  patch: Partial<Profile>,
+): Promise<Profile> {
+  return mutate((state) => {
+    const next: Profile = { ...state.profile };
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) continue; // undefined = "leave as-is"
+      (next as Record<string, unknown>)[key] = value;
+    }
+    next.updatedAt = Date.now();
+    state.profile = next;
+    return next;
+  });
+}
+
 export async function upsertMatches(matches: Match[]): Promise<void> {
   return mutate((state) => {
     for (const m of matches) {

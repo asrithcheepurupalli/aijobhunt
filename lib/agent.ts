@@ -6,6 +6,7 @@ import {
   findMatch,
   mergeProfile,
   readState,
+  setProfileFields,
   updateMatch,
   upsertMatches,
 } from "./store";
@@ -69,12 +70,24 @@ const TOOLS: Anthropic.Tool[] = [
       additionalProperties: false,
       properties: {
         name: { type: "string" },
+        targetRole: {
+          type: "string",
+          description: "The role they're going for, e.g. 'founding design engineer'.",
+        },
         positioning: {
           type: "string",
           description: "One-line positioning, ideally in the user's own words.",
         },
+        proudestOf: {
+          type: "string",
+          description: "The proudest thing they've built or shipped.",
+        },
         headline: { type: "string" },
         location: { type: "string" },
+        remoteOnly: {
+          type: "boolean",
+          description: "True if they only want remote right now.",
+        },
         availability: { type: "string" },
         links: { type: "array", items: { type: "string" } },
         priorities: {
@@ -83,6 +96,15 @@ const TOOLS: Anthropic.Tool[] = [
           description: "Ranked priorities, in their words.",
         },
         dealbreakers: { type: "array", items: { type: "string" } },
+        offLimits: {
+          type: "array",
+          items: { type: "string" },
+          description: "Companies to never contact.",
+        },
+        emailStyle: {
+          type: "string",
+          description: "How their outreach should read: tone, openers, banned phrases, sign-off.",
+        },
         notes: {
           type: "array",
           items: { type: "string" },
@@ -169,40 +191,144 @@ const TOOLS: Anthropic.Tool[] = [
 
 // ---- research helper -------------------------------------------------------
 
-async function researchLinks(urls: string[], profile: Profile): Promise<string> {
+export interface ResearchResult {
+  summary: string;
+  strongestSignals: string[];
+  dossier: string;
+  findings: string;
+  confidence: "high" | "medium" | "low";
+  openQuestions: string[];
+}
+
+const SUBMIT_RESEARCH: Anthropic.Tool = {
+  name: "submit_research",
+  description:
+    "Submit the structured research profile built from reading the person's links. Call once, after reading their sites.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      summary: {
+        type: "string",
+        description: "2-4 sentence summary of who they are and what they build.",
+      },
+      strongestSignals: {
+        type: "array",
+        items: { type: "string" },
+        description: "Standout proof points — concrete, specific.",
+      },
+      dossier: {
+        type: "string",
+        description:
+          "The complete profile used when drafting founder emails: projects, clients, stack, what they own end-to-end, taste signals. Detailed and factual — no fabricated metrics.",
+      },
+      findings: {
+        type: "string",
+        description: "6-10 tight bullet points of what you saw across their links.",
+      },
+      confidence: {
+        type: "string",
+        enum: ["high", "medium", "low"],
+        description: "How complete the picture is given what you could crawl.",
+      },
+      openQuestions: {
+        type: "array",
+        items: { type: "string" },
+        description: "Specific things you couldn't confirm and would want the person to fill in.",
+      },
+    },
+    required: ["summary", "strongestSignals", "dossier", "findings", "confidence"],
+  },
+};
+
+async function researchLinks(
+  urls: string[],
+  profile: Profile,
+): Promise<ResearchResult> {
   const client = getClient();
-  const system = `You research a person's work from their links so a hiring agent can position them. Read the sites, then summarize: what they build, what stands out, what signals taste/skill, and what's fuzzy or missing. Be specific and concrete. 6-10 tight bullet points.`;
-  const userPrompt = `Person: ${profile.name ?? "(unknown)"}\nLinks to research:\n${urls.join("\n")}\n\nRead these and summarize what you find.`;
+  const system = `You research a person's work from their links so a hiring agent can position them and write their cold emails. Read the sites (and search for context), then build a structured profile: a summary, their strongest signals, a full dossier for drafting emails, tight findings, a confidence level, and open questions you couldn't resolve. Be specific and concrete. Never fabricate metrics or facts you can't see. When done, call submit_research once.`;
+  const userPrompt = `Person: ${profile.name ?? "(unknown)"}\nLinks to research:\n${urls.join("\n")}\n\nRead these thoroughly, then submit_research.`;
 
   const serverTools = [
     { type: "web_search_20260209", name: "web_search", max_uses: 6 },
-    { type: "web_fetch_20260209", name: "web_fetch", max_uses: 8 },
+    { type: "web_fetch_20260209", name: "web_fetch", max_uses: 10 },
   ];
 
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: userPrompt },
   ];
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 3000,
+      max_tokens: 4000,
       system,
-      tools: serverTools as unknown as Anthropic.Tool[],
+      tools: [SUBMIT_RESEARCH, ...(serverTools as unknown as Anthropic.Tool[])],
       messages,
     });
     if (response.stop_reason === "pause_turn") {
       messages.push({ role: "assistant", content: response.content });
       continue;
     }
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    return text || "(research came back thin — couldn't pull much structured detail.)";
+    const toolUses = response.content.filter(
+      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+    );
+    const submit = toolUses.find((t) => t.name === "submit_research");
+    if (submit) {
+      const input = submit.input as Partial<ResearchResult>;
+      return {
+        summary: input.summary ?? "",
+        strongestSignals: input.strongestSignals ?? [],
+        dossier: input.dossier ?? "",
+        findings: input.findings ?? "",
+        confidence: input.confidence ?? "medium",
+        openQuestions: input.openQuestions ?? [],
+      };
+    }
+    if (toolUses.length === 0) {
+      // No tool call, not paused — nudge once to submit.
+      messages.push({ role: "assistant", content: response.content });
+      messages.push({
+        role: "user",
+        content: "Please call submit_research now with what you found.",
+      });
+      continue;
+    }
+    // It made server-tool calls (handled server-side); continue the loop.
+    messages.push({ role: "assistant", content: response.content });
   }
-  return "(research timed out.)";
+  return {
+    summary: "",
+    strongestSignals: [],
+    dossier: "",
+    findings: "(research came back thin — couldn't pull much structured detail.)",
+    confidence: "low",
+    openQuestions: [],
+  };
+}
+
+function saveResearch(r: ResearchResult): Promise<Profile> {
+  return setProfileFields({
+    summary: r.summary || undefined,
+    strongestSignals: r.strongestSignals.length ? r.strongestSignals : undefined,
+    dossier: r.dossier || undefined,
+    research: r.findings,
+    researchConfidence: r.confidence,
+    researchOpenQuestions: r.openQuestions,
+    researchUpdatedAt: Date.now(),
+  });
+}
+
+// Re-run research from the profile's links (or a provided set) and overwrite the
+// research-generated fields. Powers the Profile page's "re-run research" button.
+export async function rerunResearch(urls?: string[]): Promise<Profile> {
+  const state = await readState();
+  const links = (urls && urls.length ? urls : state.profile.links) ?? [];
+  if (links.length === 0) {
+    throw new Error("no links on your profile yet — add some first.");
+  }
+  const r = await researchLinks(links, state.profile);
+  return saveResearch(r);
 }
 
 // ---- tool dispatch ---------------------------------------------------------
@@ -220,9 +346,12 @@ async function executeTool(
     }
     case "research_links": {
       const urls = (input.urls as string[]) ?? [];
-      const findings = await researchLinks(urls, state.profile);
-      await mergeProfile({ research: findings });
-      return `research complete. findings:\n${findings}`;
+      const r = await researchLinks(urls, state.profile);
+      // Overwrite the research-generated fields (they're regenerated each run).
+      await saveResearch(r);
+      // Persist any links the agent researched so the profile has them.
+      if (urls.length) await mergeProfile({ links: urls });
+      return `research complete (confidence: ${r.confidence}).\n\nsummary: ${r.summary}\n\nstrongest signals:\n${r.strongestSignals.map((s) => `- ${s}`).join("\n")}\n\nfindings:\n${r.findings}${r.openQuestions.length ? `\n\nopen questions:\n${r.openQuestions.map((q) => `- ${q}`).join("\n")}` : ""}`;
     }
     case "find_matches": {
       const count = Math.max(1, Math.min(10, Number(input.count) || 3));
