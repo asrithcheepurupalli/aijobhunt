@@ -1,10 +1,13 @@
-# aijobhunt
+# Foothold
 
-Your own **startup-hiring agent**, built in the shape of [Backdoor](https://backdoorai.app) — for yourself.
+Your personal **startup-hiring agent** — text-native, built for you.
 
 You chat with it like you'd text a friend. It learns your background, reads your
 actual work, sources **real** early-stage startups that fit you, scores each one,
 and drafts founder outreach. **Nothing is ever sent without you approving it first.**
+
+It's a personal tool that runs on **your own Anthropic API key** — no pricing, no
+billing, no subscription. You just pay for API credits.
 
 ## The flow
 
@@ -21,6 +24,11 @@ and drafts founder outreach. **Nothing is ever sent without you approving it fir
    ready to send from your own mail client. It never emails on your behalf silently.
 
 The right-hand **pipeline** shows every match, draft, and status for full traceability.
+
+## Routes
+
+- `/` — the landing page (theme-aware, responsive).
+- `/app` — the agent: iMessage-style chat + live pipeline dashboard.
 
 ## Run it
 
@@ -49,9 +57,8 @@ npm run dev                  # http://localhost:3000
   `set_match_status` — see `lib/agent.ts`. Sourcing + redrafting live in
   `lib/sourcing.ts`.
 
-## What's intentionally left as next steps
+## Next steps (optional)
 
-- Real send + reply tracking + automated multi-step follow-ups (the paid tier in
-  the original).
+- Real send + reply tracking + automated multi-step follow-ups.
 - A daily "digest" cron that sources a fresh batch each morning.
 - WhatsApp/SMS bridge (Twilio) so it's truly text-native.

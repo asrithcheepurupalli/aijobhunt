@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Hoefler Text", "Iowan Old Style", Garamond, "Palatino Linotype",
+    "Times New Roman", serif;
 }
 
 html,
@@ -14,9 +17,14 @@ body {
 body {
   background: #f5f5f7;
   color: #111;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* iMessage-style chat bubbles */
+/* ============================================================= */
+/* Chat (the /app screen) — iMessage-style bubbles               */
+/* ============================================================= */
 .bubble {
   max-width: 78%;
   padding: 8px 13px;
@@ -26,23 +34,19 @@ body {
   word-break: break-word;
   font-size: 15px;
 }
-
 .bubble-in {
   background: #e9e9eb;
   color: #000;
   border-bottom-left-radius: 4px;
 }
-
 .bubble-out {
   background: #0b93f6;
   color: #fff;
   border-bottom-right-radius: 4px;
 }
-
 .bubble a {
   text-decoration: underline;
 }
-
 .typing span {
   display: inline-block;
   width: 7px;
@@ -68,12 +72,201 @@ body {
     opacity: 1;
   }
 }
-
-/* thin scrollbars */
 .scroll::-webkit-scrollbar {
   width: 8px;
 }
 .scroll::-webkit-scrollbar-thumb {
   background: #c7c7cc;
   border-radius: 4px;
+}
+
+/* ============================================================= */
+/* Landing — self-contained, theme-aware design system           */
+/* Tokens are scoped to .landing so the chat app stays light.    */
+/* ============================================================= */
+.landing {
+  --bg: #fafafa;
+  --bg-elev: #ffffff;
+  --ink: #101013;
+  --muted: #63636b;
+  --faint: #8a8a92;
+  --line: rgba(16, 16, 19, 0.1);
+  --line-soft: rgba(16, 16, 19, 0.06);
+  --accent: #ff4e2b;
+  --accent-ink: #ffffff;
+  --glow: rgba(255, 78, 43, 0.14);
+  --card-shadow: 0 1px 2px rgba(16, 16, 19, 0.04),
+    0 12px 40px -18px rgba(16, 16, 19, 0.18);
+
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100%;
+  font-family: var(--font-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  .landing:not([data-theme="light"]) {
+    --bg: #0a0a0b;
+    --bg-elev: #141417;
+    --ink: #f4f4f5;
+    --muted: #a1a1aa;
+    --faint: #71717a;
+    --line: rgba(255, 255, 255, 0.1);
+    --line-soft: rgba(255, 255, 255, 0.06);
+    --accent: #ff6a47;
+    --accent-ink: #100c0a;
+    --glow: rgba(255, 106, 71, 0.16);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+      0 18px 50px -20px rgba(0, 0, 0, 0.7);
+  }
+}
+.landing[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --bg-elev: #141417;
+  --ink: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #71717a;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --accent: #ff6a47;
+  --accent-ink: #100c0a;
+  --glow: rgba(255, 106, 71, 0.16);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 18px 50px -20px rgba(0, 0, 0, 0.7);
+}
+
+.landing .serif {
+  font-family: var(--font-serif);
+}
+
+/* Buttons */
+.l-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+  border: 1px solid transparent;
+  line-height: 1;
+}
+.l-btn:active {
+  transform: translateY(1px);
+}
+.l-btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.l-btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.l-btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.l-btn-ghost:hover {
+  border-color: var(--ink);
+}
+
+/* Cards & surfaces */
+.l-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+}
+.l-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--bg-elev);
+}
+
+/* Landing bubbles (token-aware so they read in dark mode) */
+.landing .lb {
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 18px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+.landing .lb-in {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+  border-bottom-left-radius: 5px;
+}
+.landing .lb-out {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-right-radius: 5px;
+}
+
+/* Entrance animations */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-up {
+  opacity: 0;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.landing .lb {
+  opacity: 0;
+  animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Scroll reveal (JS toggles .in) */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-up,
+  .landing .lb,
+  .reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
