@@ -1,8 +1,8 @@
 {
-  "name": "aijobhunt",
+  "name": "foothold",
   "version": "0.1.0",
   "private": true,
-  "description": "A personal startup-hiring agent, in the shape of Backdoor. Chats with you over a text-style interface, learns your background, sources high-fit early-stage roles, scores them, and drafts founder outreach you approve before anything is sent.",
+  "description": "Foothold — a personal, text-native startup-hiring agent. Learns your real work, sources high-fit early-stage roles, scores them, and drafts founder outreach you approve before anything is sent. Runs on your own Anthropic API key; no pricing or billing.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
